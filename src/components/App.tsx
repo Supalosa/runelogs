@@ -101,7 +101,7 @@ function App() {
     const handleSelectFight = (index: number, raidIndex?: number, subIndex?: number) => {
         worker.postMessage({type: 'getItem', index, raidIndex, subIndex});
         setSelectedFightMetadataIndex(index);
-        setSelectedRaidIndex(subIndex);
+        setSelectedRaidIndex(raidIndex);
     };
 
     const handleRaidSelectFight = (raidIndex: number) => {
