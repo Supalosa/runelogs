@@ -87,6 +87,8 @@ export function logSplitter(fightData: LogLine[], progressCallback?: (progress: 
         }
 
         const fightLengthMs = (endFightTimeMs) ? endFightTimeMs - startFightTimeMs : calcWaveFightLength();
+        // put the calculated value back on the last line
+        lastLine.fightTimeMs = startFightTimeMs + fightLengthMs;
         currentFight!.metaData = {
             date: currentFight!.firstLine.date,
             fightLengthMs,

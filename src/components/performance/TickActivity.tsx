@@ -92,14 +92,14 @@ function getWeaponHitsForDuration(durationSeconds: number, currentWeaponSpeed: n
  * Calculates the maximum number of expected weapon hits, taking weapon speed into account.
  * Assumes ranged weapons are on the rapid style.
  */
-export function getFightPerformance(encounter: Encounter): FightPerformance {
+export function getFightPerformance(encounter: Encounter, initialWeaponSpeed: number = 2): FightPerformance {
     let expectedWeaponHits = 1; // You get a first hit immediately no matter the weapon speed
     let actualWeaponHits = 0;
     let boostedHits = 0;
 
     let expectedLastTimestamp = 0;
     let previousWeaponSpeed = 0; // Because your next weapon does a single hit at the old weapon speed
-    let currentWeaponSpeed = 0;
+    let currentWeaponSpeed = initialWeaponSpeed;
     let currentWeapon: Weapon;
     let activeTime = 0;
     let lastBoost: BoostedLevels;
@@ -152,12 +152,17 @@ export function getFightPerformance(encounter: Encounter): FightPerformance {
         if ((fight.lastLine?.tick ?? 0) > (lastFight.lastLine?.tick ?? 0)) {
             lastFight = fight;
         }
+        // Rest of the fight after the last hit
+        const durationSeconds = (lastFight?.lastLine.fightTimeMs! - expectedLastTimestamp) / 1000;
+        const {newWeaponHits} = getWeaponHitsForDuration(durationSeconds, currentWeaponSpeed, previousWeaponSpeed);
+        if (isNaN(newWeaponHits)) {
+            console.error('NaN newWeaponHits for fight', fight);
+            console.dir({durationSeconds, newWeaponHits, currentWeaponSpeed, previousWeaponSpeed, lastFight, expectedLastTimestamp});
+        }
+        console.log('newWeaponHIts', newWeaponHits, durationSeconds)
+        expectedWeaponHits += newWeaponHits;
     });
 
-    // Rest of the fight after the last hit
-    const durationSeconds = (lastFight?.lastLine.fightTimeMs! - expectedLastTimestamp) / 1000;
-    const {newWeaponHits} = getWeaponHitsForDuration(durationSeconds, currentWeaponSpeed, previousWeaponSpeed);
-    expectedWeaponHits += newWeaponHits;
 
     return {activeTime, actualWeaponHits, boostedHits, expectedWeaponHits};
 }

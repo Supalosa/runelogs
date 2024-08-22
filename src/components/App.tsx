@@ -18,6 +18,16 @@ import DropdownFightSelector from './sections/DropdownFightSelector';
 import { Encounter, EncounterMetaData } from '../models/LogLine';
 import { FightView } from './FightView';
 
+const getMetaData = (fight: Encounter): EncounterMetaData => {
+    if (isFight(fight)) {
+        return fight.metaData;
+    } else if (isWaves(fight)) {
+        return getWavesMetaData(fight);
+    } else {
+        return getRaidMetadata(fight);
+    }
+}
+
 import ReactGA from 'react-ga4';
 import * as semver from "semver";
 
@@ -62,6 +72,7 @@ function App() {
 
                 setParseInProgress(false);
             } else if (type === 'item') {
+                item.metaData = getMetaData(item);
                 setSelectedFight(item);
             }
         };
@@ -115,17 +126,13 @@ function App() {
             .getItem<Encounter[]>('fightData')
             .then((data: Encounter[] | null) => {
                 if (data) {
-                    setFightMetadata(
-                        data.map((fight) => {
-                            if (isFight(fight)) {
-                                return fight.metaData;
-                            } else if (isWaves(fight)) {
-                                return getWavesMetaData(fight);
-                            } else {
-                                return getRaidMetadata(fight);
-                            }
-                        })
-                    );
+                    // recalculate the metadata in case the metadata method has changed since last time it was stored
+                    setFightMetadata(data.map(fight =>
+                    {
+                        const metaData = getMetaData(fight);
+                        fight.metaData = metaData;
+                        return metaData;   
+                    }));
                 }
                 setLoadingStorage(false);
             })

@@ -3,11 +3,12 @@ import { BoostsTab, DamageDoneTab, DamageTakenTab, EventsTab, ReplayTab, TabsEnu
 import { Fight, isFight } from "../models/Fight";
 import TickActivity from "./performance/TickActivity";
 import { BOSS_NAMES } from "../utils/constants";
-import { Tab, Tabs } from "@mui/material";
-import { isRaidMetaData } from "../models/Raid";
+import { Chip, Tab, Tabs } from "@mui/material";
+import { isRaid, isRaidMetaData } from "../models/Raid";
 import DropdownFightSelector from "./sections/DropdownFightSelector";
 import { Icon } from "@iconify/react";
 import { Encounter, EncounterMetaData } from "../models/LogLine";
+import { isWaveMetaData, isWaves } from "../models/Waves";
 
 import * as semver from "semver";
 
@@ -43,7 +44,8 @@ export const FightView = ({fight, encounterMetaData, selectedFightIndex, onBack,
         return true;
     });
 
-    const showTickActivity = isFight(fight) ? (BOSS_NAMES.includes(fight.metaData.name) || fight.metaData.fightLengthMs >= 15000) : false;
+    const fightCount = isFight(fight) ? 1 : isRaid(fight) ? fight.fights.length : fight.waves.reduce((acc, w) => acc + w.fights.length, 0);
+    const showTickActivity = isFight(fight) ? (BOSS_NAMES.includes(fight.metaData.name) || fight.metaData.fightLengthMs >= 15000) : isWaves(fight);
 
     return <div className="App-main">
     <div style={{display: 'flex', alignItems: 'center'}}>
@@ -68,6 +70,8 @@ export const FightView = ({fight, encounterMetaData, selectedFightIndex, onBack,
                 <label>{fight.name}</label>
             )
         )}
+        
+        {fightCount > 1 && <>{' '}<Chip color="secondary" size="small" label={`${fightCount} fights`} /></>}
     </div>
     {renderDropdownFightSelector()}
     <Tabs

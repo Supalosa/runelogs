@@ -50,6 +50,6 @@ export function getWavesMetaData(waves: Omit<Waves, 'metaData'>): WavesMetaData 
     return {
         name: waves.name,
         waves: waves.waves.map(getWaveMetaData) ?? [],
-        fightLengthMs: waves.waves.reduce((acc, wave) => acc + wave.fights.reduce((acc2, f) => f.metaData.fightLengthMs, 0), 0),
+        fightLengthMs: waves.waves.reduce((acc, wave) => acc + wave.fights.reduce((acc2, f) => acc2 + f.metaData.fightLengthMs, 0), 0),
     };
 }
