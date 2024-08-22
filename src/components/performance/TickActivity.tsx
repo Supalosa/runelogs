@@ -1,14 +1,16 @@
 import React, {useEffect, useState} from 'react';
-import {Fight} from "../../models/Fight";
-import {LogTypes} from "../../models/LogLine";
+import {Fight, isFight} from "../../models/Fight";
+import {Encounter, LogTypes} from "../../models/LogLine";
 import {weaponMap} from "../../models/WeaponMap";
 import {COX_MONSTERS, SECONDS_PER_TICK, TOA_MONSTERS} from "../../models/Constants";
 import {CombatClass, Weapon} from "../../models/Weapon";
 import {BoostedLevels} from "../../models/BoostedLevels";
 import {Tooltip} from '@mui/material';
+import { isRaid } from '../../models/Raid';
+import { isWaves } from '../../models/Waves';
 
 interface TickActivityProps {
-    selectedLogs: Fight;
+    selectedLogs: Encounter;
 }
 
 export interface FightPerformance {
@@ -90,7 +92,7 @@ function getWeaponHitsForDuration(durationSeconds: number, currentWeaponSpeed: n
  * Calculates the maximum number of expected weapon hits, taking weapon speed into account.
  * Assumes ranged weapons are on the rapid style.
  */
-export function getFightPerformance(fight: Fight): FightPerformance {
+export function getFightPerformance(encounter: Encounter): FightPerformance {
     let expectedWeaponHits = 1; // You get a first hit immediately no matter the weapon speed
     let actualWeaponHits = 0;
     let boostedHits = 0;
@@ -102,50 +104,58 @@ export function getFightPerformance(fight: Fight): FightPerformance {
     let activeTime = 0;
     let lastBoost: BoostedLevels;
 
-    fight.data.forEach(log => {
-        if (log.type === LogTypes.PLAYER_EQUIPMENT) {
-            log.playerEquipment.forEach(itemId => {
-                const weapon = weaponMap[parseInt(itemId)];
-                if (weapon) {
-                    // We swapped weapons, see how many hits we should have gotten with the last weapon
-                    if (currentWeaponSpeed) {
-                        const durationSeconds = (log.fightTimeMs! - expectedLastTimestamp) / 1000;
-                        const {
-                            newWeaponHits,
-                            timeTaken
-                        } = getWeaponHitsForDuration(durationSeconds, currentWeaponSpeed, previousWeaponSpeed);
-                        expectedWeaponHits += newWeaponHits;
+    const fights = isFight(encounter) ? [encounter] : isRaid(encounter) ? encounter.fights : isWaves(encounter) ? encounter.waves.flatMap((w) => w.fights) : [];
+    let lastFight: Fight = fights[0];
 
-                        // Should end up close to log.fightTimeMs but not always the same, because log.fightTimeMs is just when we swapped weapons, not when we actually hit last
-                        expectedLastTimestamp += timeTaken;
+    fights.forEach((fight) => {
+        fight.data.forEach((log) => {
+            if (log.type === LogTypes.PLAYER_EQUIPMENT) {
+                log.playerEquipment.forEach(itemId => {
+                    const weapon = weaponMap[parseInt(itemId)];
+                    if (weapon) {
+                        // We swapped weapons, see how many hits we should have gotten with the last weapon
+                        if (currentWeaponSpeed) {
+                            const durationSeconds = (log.fightTimeMs! - expectedLastTimestamp) / 1000;
+                            const {
+                                newWeaponHits,
+                                timeTaken
+                            } = getWeaponHitsForDuration(durationSeconds, currentWeaponSpeed, previousWeaponSpeed);
+                            expectedWeaponHits += newWeaponHits;
+
+                            // Should end up close to log.fightTimeMs but not always the same, because log.fightTimeMs is just when we swapped weapons, not when we actually hit last
+                            expectedLastTimestamp += timeTaken;
+                        }
+
+                        previousWeaponSpeed = currentWeaponSpeed;
+                        currentWeaponSpeed = weapon.speed;
+                        currentWeapon = weapon;
                     }
-
-                    previousWeaponSpeed = currentWeaponSpeed;
-                    currentWeaponSpeed = weapon.speed;
-                    currentWeapon = weapon;
-                }
-            });
-        }
-        if (log.type === LogTypes.BOOSTED_LEVELS) {
-            lastBoost = log.boostedLevels;
-        }
-        if (log.type === LogTypes.PLAYER_ATTACK_ANIMATION && (!log.source || log.source.name === fight.loggedInPlayer)) {
-            actualWeaponHits += 1;
-            boostedHits += getBoostedHitWeight(fight, currentWeapon, lastBoost);
-
-            let weaponSpeedSeconds = currentWeaponSpeed * SECONDS_PER_TICK;
-
-            // Don't count active time past the end of the fight
-            // If you sit idle for 3 ticks and then 1 hit the monster with a 5 tick weapon that shouldn't be 100%
-            if (log.fightTimeMs! + weaponSpeedSeconds * 1000 > fight.lastLine.fightTimeMs!) {
-                weaponSpeedSeconds = (fight.lastLine.fightTimeMs! - log.fightTimeMs!) / 1000;
+                });
             }
-            activeTime += weaponSpeedSeconds;
+            if (log.type === LogTypes.BOOSTED_LEVELS) {
+                lastBoost = log.boostedLevels;
+            }
+            if (log.type === LogTypes.PLAYER_ATTACK_ANIMATION && (!log.source || log.source.name === fight.loggedInPlayer)) {
+                actualWeaponHits += 1;
+                boostedHits += getBoostedHitWeight(fight, currentWeapon, lastBoost);
+
+                let weaponSpeedSeconds = currentWeaponSpeed * SECONDS_PER_TICK;
+
+                // Don't count active time past the end of the fight
+                // If you sit idle for 3 ticks and then 1 hit the monster with a 5 tick weapon that shouldn't be 100%
+                if (log.fightTimeMs! + weaponSpeedSeconds * 1000 > fight.lastLine.fightTimeMs!) {
+                    weaponSpeedSeconds = (fight.lastLine.fightTimeMs! - log.fightTimeMs!) / 1000;
+                }
+                activeTime += weaponSpeedSeconds;
+            }
+        });
+        if ((fight.lastLine?.tick ?? 0) > (lastFight.lastLine?.tick ?? 0)) {
+            lastFight = fight;
         }
     });
 
     // Rest of the fight after the last hit
-    const durationSeconds = (fight.lastLine.fightTimeMs! - expectedLastTimestamp) / 1000;
+    const durationSeconds = (lastFight?.lastLine.fightTimeMs! - expectedLastTimestamp) / 1000;
     const {newWeaponHits} = getWeaponHitsForDuration(durationSeconds, currentWeaponSpeed, previousWeaponSpeed);
     expectedWeaponHits += newWeaponHits;
 
@@ -154,7 +164,7 @@ export function getFightPerformance(fight: Fight): FightPerformance {
 
 interface PerformanceProps {
     metricName: "Activity" | "Boosted Hits";
-    fight: Fight;
+    encounter: Encounter;
     performance: FightPerformance;
 }
 
@@ -179,11 +189,11 @@ function getPercentColor(percentage: number) {
     return percentColor;
 }
 
-const Performance: React.FC<PerformanceProps> = ({metricName, fight, performance}) => {
+const Performance: React.FC<PerformanceProps> = ({metricName, encounter, performance}) => {
     let percentage: number = 0;
 
     if (metricName === "Activity") {
-        percentage = (performance.activeTime / (fight.metaData.fightLengthMs / 1000)) * 100;
+        percentage = (performance.activeTime / (encounter.metaData.fightLengthMs / 1000)) * 100;
     } else if (metricName === "Boosted Hits") {
         percentage = performance.boostedHits / performance.actualWeaponHits * 100;
     }
@@ -237,9 +247,9 @@ const TickActivity: React.FC<TickActivityProps> = ({selectedLogs}) => {
     return (
         <div style={{display: 'flex', flexWrap: 'wrap'}}>
             {fightPerformance &&
-                <Performance metricName="Activity" fight={selectedLogs} performance={fightPerformance}/>}
+                <Performance metricName="Activity" encounter={selectedLogs} performance={fightPerformance}/>}
             {fightPerformance &&
-                <Performance metricName="Boosted Hits" fight={selectedLogs} performance={fightPerformance}/>}
+                <Performance metricName="Boosted Hits" encounter={selectedLogs} performance={fightPerformance}/>}
         </div>
     );
 };

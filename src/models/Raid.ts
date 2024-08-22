@@ -3,7 +3,8 @@ import { Encounter, EncounterMetaData } from "./LogLine";
 
 export interface Raid {
     name: string;
-    fights: Fight[]
+    fights: Fight[];
+    metaData: RaidMetaData;
 }
 
 export function isRaid(e: Encounter): e is Raid {
@@ -16,7 +17,8 @@ export interface RaidMetaData {
     //date: string;
     //time: string;
     //success: boolean;
-    //lengthMs: number;
+    // TODO rename to durationMs
+    fightLengthMs: number;
     fights: FightMetaData[]
 }
 
@@ -28,9 +30,10 @@ export function isRaidMetaData(metaData: EncounterMetaData | null): metaData is 
     }
 }
 
-export function getRaidMetadata(fight: Raid): RaidMetaData {
+export function getRaidMetadata(fight: Omit<Raid, 'metaData'>): RaidMetaData {
     return {
         name: fight.name,
-        fights: fight.fights.map(fight => fight.metaData)
+        fights: fight.fights.map(fight => fight.metaData),
+        fightLengthMs: fight.fights.reduce((acc, v) => acc + v.metaData.fightLengthMs, 0),
     };
 }

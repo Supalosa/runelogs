@@ -72,7 +72,7 @@ function App() {
     const [fightMetadata, setFightMetadata] = useState<EncounterMetaData[] | null>(null);
     const [selectedFightMetadataIndex, setSelectedFightMetadataIndex] = useState<number | null>(null);
     const [selectedRaidIndex, setSelectedRaidIndex] = useState<number | undefined>(undefined);
-    const [selectedFight, setSelectedFight] = useState<Fight | null>(null);
+    const [selectedFight, setSelectedFight] = useState<Encounter | null>(null);
 
     const [parseInProgress, setParseInProgress] = useState<boolean>(false);
     const [parsingProgress, setParsingProgress] = useState<number>(0);

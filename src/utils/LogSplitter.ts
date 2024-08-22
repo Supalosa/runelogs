@@ -19,8 +19,8 @@ import {
     WAVE_BASED_REGION_MAPPING
 } from "./constants";
 import {SECONDS_PER_TICK} from "../models/Constants";
-import {Raid} from "../models/Raid";
-import { Wave, Waves } from "../models/Waves";
+import {getRaidMetadata, Raid} from "../models/Raid";
+import { getWavesMetaData, Wave, Waves } from "../models/Waves";
 
 
 export function isMine(hitsplatName: string) {
@@ -70,6 +70,11 @@ export function logSplitter(fightData: LogLine[], progressCallback?: (progress: 
         return {name, fights: [], metaData: {name, fights: [], waveLengthTicks: -1, success: false}};
     };
 
+    const createWaves = (name: string, waves: Wave[]): Waves => {
+        const res: Omit<Waves, 'metaData'> = {name, waves};
+        return {...res, metaData: getWavesMetaData(res)};
+    }
+
     function endFight(lastLine: LogLine, success: boolean, nullFight: boolean = true) {
         currentFight!.lastLine = lastLine;
 
@@ -102,11 +107,13 @@ export function logSplitter(fightData: LogLine[], progressCallback?: (progress: 
         const raidName = playerRegion ? RAID_NAME_REGION_MAPPING[playerRegion] : null;
         const wavesName = playerRegion ? WAVE_BASED_REGION_MAPPING[playerRegion] : null;
         if (raidName) {
-            currentRaid = currentRaid || {name: raidName, fights: []};
-            currentRaid.fights.push(currentFight as Fight);
+            const fight: Fight = currentFight!;
+            const raid: Omit<Raid, 'metaData'> = {name: raidName, fights: []};
+            currentRaid = currentRaid || {...raid, metaData: getRaidMetadata(raid)};
+            currentRaid.fights.push(fight);
         } else if (wavesName) {
             currentWave = currentWave || createWave(`Wave ${currentFight?.mainEnemyName}`, lastLine.tick);
-            currentWaves = currentWaves || {name: wavesName, waves: [currentWave!], metaData: {name: wavesName, waves: [currentWave.metaData]}};
+            currentWaves = currentWaves || createWaves(wavesName, [currentWave]);
             currentWave.fights.push(currentFight as Fight);
         } else {
             fights.push(currentFight as Fight);
@@ -160,7 +167,7 @@ export function logSplitter(fightData: LogLine[], progressCallback?: (progress: 
             const wavesName = playerRegion ? WAVE_BASED_REGION_MAPPING[playerRegion] : null;
             currentWave = createWave(`Wave ${logLine.waveNumber}`, logLine.tick!);
             if (!currentWaves && wavesName) {
-                currentWaves = {name: wavesName, waves: [], metaData: {name: wavesName, waves: []}};
+                currentWaves = createWaves(wavesName, []);
             }
         }
 

@@ -87,7 +87,7 @@
     color: yellow;
 }
 
-.damage-done-container {
+.damage-done-container, .waves-fight-container {
     text-align: center;
     width: 1000px;
     background: #141414;
@@ -107,6 +107,11 @@
         padding: 15px;
         margin-bottom: 15px;
     }
+}
+
+.waves-fight-container:hover {
+    border: 3px solid white;
+    cursor: pointer;
 }
 
 .logs-box {

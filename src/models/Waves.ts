@@ -19,6 +19,8 @@ export function isWaves(e: Encounter): e is Waves {
 
 export interface WavesMetaData {
     name: string;
+    // TODO rename to durationMs
+    fightLengthMs: number;
     waves: WaveMetaData[];
 }
 
@@ -44,9 +46,10 @@ export function getWaveMetaData(wave: Wave): WaveMetaData {
     }
 }
 
-export function getWavesMetaData(waves: Waves): WavesMetaData {
+export function getWavesMetaData(waves: Omit<Waves, 'metaData'>): WavesMetaData {
     return {
         name: waves.name,
-        waves: waves.waves?.map(getWaveMetaData) ?? []
+        waves: waves.waves.map(getWaveMetaData) ?? [],
+        fightLengthMs: waves.waves.reduce((acc, wave) => acc + wave.fights.reduce((acc2, f) => f.metaData.fightLengthMs, 0), 0),
     };
 }

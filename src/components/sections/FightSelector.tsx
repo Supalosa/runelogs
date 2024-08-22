@@ -1,110 +1,12 @@
 import React, {useEffect, useState} from 'react';
 import {FightMetaData} from "../../models/Fight";
-import {formatHHmmss} from "../../utils/utils";
 import {isRaidMetaData} from "../../models/Raid";
 import { isWaveMetaData, WaveMetaData, WavesMetaData } from '../../models/Waves';
 import { EncounterMetaData } from '../../models/LogLine';
+import { Fight } from './fight-selector/Fight';
+import { RaidFight } from './fight-selector/RaidFight';
+import { Waves } from './fight-selector/Waves';
 
-interface FightProps {
-    fight: FightMetaData;
-    index: number;
-    title: string;
-    onSelectFight: (index: number) => void;
-    isShortest: boolean;
-}
-
-const Fight: React.FC<FightProps> = ({fight, index, title, onSelectFight, isShortest}) => {
-    const time = new Date(`2000-01-01T${fight.time}`);
-
-    const formattedTime = time.toLocaleString('en-US', {
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: true,
-    });
-
-    const nameColor = fight.success ? 'rgb(128, 230, 102)' : 'rgb(230, 128, 102)';
-
-    const handleClick = () => {
-        onSelectFight(index);
-    };
-    const formattedDuration = formatHHmmss(fight.fightLengthMs, false);
-
-    return (
-        <div className="fight-container" onClick={handleClick}>
-            <div className="fight-title">
-                <div style={{color: nameColor}}>{`${title} (${formattedDuration})`}</div>
-            </div>
-            <div>{formattedTime}</div>
-            {isShortest && (
-                <div className="gold-star">&#9733;</div>
-            )}
-        </div>
-    );
-};
-
-interface RaidFightProps {
-    fight: FightMetaData;
-    index: number;
-    raidIndex: number;
-    fightName: string;
-    onSelectFight: (index: number, raidIndex: number) => void;
-    isShortest: boolean;
-}
-
-const RaidFight: React.FC<RaidFightProps> = ({fight, index, raidIndex, fightName, onSelectFight}) => {
-    const time = new Date(`2000-01-01T${fight.time}`);
-
-    const formattedTime = time.toLocaleString('en-US', {
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: true,
-    });
-
-    const nameColor = fight.success ? 'rgb(128, 230, 102)' : 'rgb(230, 128, 102)';
-
-    const handleClick = () => {
-        onSelectFight(index, raidIndex);
-    };
-    const formattedDuration = formatHHmmss(fight.fightLengthMs, false);
-
-    return (
-        <div className="raid-fight-container" onClick={handleClick}>
-            <div className="fight-title">
-                <div style={{color: nameColor}}>{`${fightName} (${formattedDuration})`}</div>
-            </div>
-            <div>{formattedTime}</div>
-        </div>
-    );
-};
-
-interface WaveProps {
-    wave: WaveMetaData;
-    index: number;
-    waveIndex: number;
-    onSelectFight: (index: number, waveIndex: number, fightIndex: number) => void;
-    isShortest: boolean;
-}
-
-
-const Wave: React.FC<WaveProps> = ({wave, index, waveIndex, onSelectFight}) => {
-    const nameColor = wave.success ? 'rgb(128, 230, 102)' : 'rgb(230, 128, 102)';
-    const handleClick = (fightIndex: number) => {
-        onSelectFight(index, waveIndex, fightIndex);
-        
-    };
-    return (
-        <div className="damage-done-container">
-            <div className="fight-title">
-                <p style={{color: nameColor}}>{wave.name}</p>
-            </div>
-            <div className="fight-list">
-                {wave.fights.map((fight, index) => {
-                    return <Fight fight={fight} index={index} title={fight.name} onSelectFight={handleClick} isShortest={false} />;
-                })}
-            </div>
-        </div>
-    );
-};
 
 interface FightSelectorProps {
     fights: (EncounterMetaData)[];
@@ -123,38 +25,41 @@ const Banner: React.FC<BannerProps> = ({name}) => {
     );
 };
 
-type FightGroup = {
-    [name: string]: {
-        isRaid: boolean;
-        wavesMetaData: WavesMetaData | null;
-        fights: {
-            fight: FightMetaData,
-            index: number,
-            raidIndex?: number
-        }[];
-        waves: {
-            wave: WaveMetaData,
-            index: number,
-            waveIndex?: number
-        }[];
-    }
-}
+export type FightGroup = {
+    isRaid: boolean;
+    wavesMetaData: WavesMetaData | null;
+    index: number;
+    fights: {
+        fight: FightMetaData,
+        index: number,
+        raidIndex?: number
+    }[];
+    waves: {
+        wave: WaveMetaData,
+        index: number,
+        waveIndex?: number
+    }[];
+};
+
+export type FightGroups = {
+    [name: string]: FightGroup;
+};
 
 const FightSelector: React.FC<FightSelectorProps> = ({fights, onSelectFight}) => {
     // Group fights by name and record shortest fight time for each group
-    const [groupedFights, setGroupedFights] = useState<FightGroup>({});
+    const [groupedFights, setGroupedFights] = useState<FightGroups>({});
 
     useEffect(() => {
-        const tempGroupedFights: FightGroup = {};
+        const tempGroupedFights: FightGroups = {};
 
         fights.forEach((fight, index) => {
             if (isRaidMetaData(fight)) {
-                tempGroupedFights[fight.name] = {isRaid: true, wavesMetaData: null, fights: fight.fights.map((f, i) => ({fight: f, index: index, raidIndex: i})), waves: []};
+                tempGroupedFights[fight.name] = {index, isRaid: true, wavesMetaData: null, fights: fight.fights.map((f, i) => ({fight: f, index: index, raidIndex: i})), waves: []};
             } else if (isWaveMetaData(fight)) {
-                tempGroupedFights[fight.name] = {isRaid: false, wavesMetaData: fight, fights: [], waves: fight.waves.map((f, i) => ({wave: f, index: index, waveIndex: i}))};
+                tempGroupedFights[fight.name] = {index, isRaid: false, wavesMetaData: fight, fights: [], waves: fight.waves.map((f, i) => ({wave: f, index: index, waveIndex: i}))};
             } else {
                 if (!tempGroupedFights[fight.name]) {
-                    tempGroupedFights[fight.name] = {isRaid: false, wavesMetaData: null, fights: [], waves: []};
+                    tempGroupedFights[fight.name] = {index, isRaid: false, wavesMetaData: null, fights: [], waves: []};
                 }
                 tempGroupedFights[fight.name].fights.push({fight, index});
             }
@@ -189,21 +94,7 @@ const FightSelector: React.FC<FightSelectorProps> = ({fights, onSelectFight}) =>
                     );
                 } else if (fightGroup.wavesMetaData) {
                     return (
-                        <div className="damage-done-container" key={name}>
-                            <Banner name={name}/>
-                            <div className="fight-list">
-                                {fightGroup.waves.map((wave, index) => (
-                                    <Wave
-                                        key={index}
-                                        wave={wave.wave}
-                                        index={wave.index}
-                                        waveIndex={wave.waveIndex!}
-                                        onSelectFight={onSelectFight}
-                                        isShortest={false}
-                                    />
-                                ))}
-                            </div>
-                        </div>
+                        <Waves index={fightGroup.index} fightGroup={fightGroup} wavesMetaData={fightGroup.wavesMetaData} onSelectFight={onSelectFight} />
                     );
                 } else {
                     let shortestTime: number;
