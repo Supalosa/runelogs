@@ -97,7 +97,7 @@ const DPSMeterTable: React.FC<DPSMeterBarChartProps> = ({loggedInPlayer, logLine
                             <TableCell style={{width: '100px', textAlign: 'center'}}>Name</TableCell>
                             <TableCell style={{textAlign: 'center', paddingBottom: '2px'}}>Amount</TableCell>
                             <TableCell style={{width: '100px', textAlign: 'center'}}>Accuracy</TableCell>
-                            <TableCell style={{width: '70px', textAlign: 'center'}}>DPS</TableCell>
+                            <TableCell style={{width: '70px', textAlign: 'center'}}>Active DPS</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
