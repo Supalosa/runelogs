@@ -14,10 +14,13 @@ const Results: React.FC<ResultsProps> = ({logLines, fightLengthMs}) => {
     const [fightDuration, setFightDuration] = useState<string>("");
     const [damage, setDamage] = useState<number>(0);
     const [dps, setDPS] = useState<number>(0);
+    const [hits, setHits] = useState<number>(0);
     const [accuracy, setAccuracy] = useState<number>(0);
 
     useEffect(() => {
-        setFightDuration(formatHHmmss(fightLengthMs, true));
+        const firstTick = logLines.reduce((acc, l) => Math.min(acc, l.tick!), Number.MAX_SAFE_INTEGER);
+        const lastTick = logLines.reduce((acc, l) => Math.max(acc, l.tick!), 0);
+        setFightDuration(formatHHmmss((lastTick - firstTick) * 600, true));
 
         const totalDamage = logLines
             .filter(log => log.type === LogTypes.DAMAGE)
@@ -25,6 +28,7 @@ const Results: React.FC<ResultsProps> = ({logLines, fightLengthMs}) => {
         setDamage(totalDamage);
 
         setDPS(calculateDPS(logLines));
+        setHits(logLines.length);
         setAccuracy(calculateAccuracy(logLines));
     }, [logLines, fightLengthMs]);
 
@@ -55,6 +59,14 @@ const Results: React.FC<ResultsProps> = ({logLines, fightLengthMs}) => {
                             </TableCell>
                             <TableCell>
                                 {isNaN(dps) || !isFinite(dps) ? 'N/A' : dps.toFixed(3)}
+                            </TableCell>
+                        </TableRow>
+                        <TableRow>
+                            <TableCell>
+                                <strong>Attacks</strong>
+                            </TableCell>
+                            <TableCell>
+                                {hits}
                             </TableCell>
                         </TableRow>
                         <TableRow>
