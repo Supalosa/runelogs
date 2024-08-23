@@ -13,6 +13,7 @@ import prayerImage from '../assets/Prayer.webp';
 import {formatHHmmss} from "../utils/utils";
 import {BOSS_NAMES} from "../utils/constants";
 import {Actor} from "../models/Actor";
+import { SECONDS_PER_TICK } from '../models/Constants';
 
 interface EventsTableProps {
     logLines: LogLine[];
@@ -50,6 +51,7 @@ const getActorName = (log: LogLine, key: 'source' | 'target'): string => {
 
 const EventsTable: React.FC<EventsTableProps> = ({logLines, loggedInPlayer, height = '500px', showSource = false}) => {
     const logs = logLines;
+    const firstTick = logLines[0].tick!;
 
     const renderStatImages = (boostedLevels: BoostedLevels) => {
         return (
@@ -95,7 +97,7 @@ const EventsTable: React.FC<EventsTableProps> = ({logLines, loggedInPlayer, heig
                                           style={{cursor: 'default'}}
                                           onMouseEnter={(e) => e.currentTarget.classList.add('highlighted-row')}
                                           onMouseLeave={(e) => e.currentTarget.classList.remove('highlighted-row')}>
-                                    <TableCell>{formatHHmmss(log.fightTimeMs!, true)}</TableCell>
+                                    <TableCell>{formatHHmmss((log.tick! - firstTick) * SECONDS_PER_TICK * 1000, true)}</TableCell>
                                     <TableCell style={{width: '120px', textAlign: 'right'}}>{log.type}</TableCell>
                                     <TableCell>
                                         {log.type === LogTypes.LOG_VERSION ? `Log version ${log.logVersion}` : ""}
