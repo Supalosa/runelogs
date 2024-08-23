@@ -33,38 +33,25 @@ const CustomTooltip: React.FC<any> = ({active, payload, label}) => {
     return null;
 };
 
-export const calculateDPSByInterval = (data: DamageLog[], interval: number) => {
-    const dpsData: { timestamp: number; dps: number }[] = [];
+export const calculateDPSByInterval = (data: DamageLog[], intervalMs: number, startTick: number) => {
+    const damageSlices: {[slice: number]: number} = {};
+    const maxTick = data.reduce((acc, l) => Math.max(acc, l.tick ?? 0), 0);
+    const intervalTicks = Math.floor(intervalMs / 600);
+    const tickToSlice = (tick: number): number => Math.floor((tick - startTick) / intervalTicks);
+    const minSlice = tickToSlice(startTick);
+    const maxSlice = tickToSlice(maxTick);
 
-    if (data && data.length > 0) {
-        let currentIntervalStart = data[0].fightTimeMs!;
-        let currentIntervalTotalDamage = 0;
-        let endTime = data[data.length - 1].fightTimeMs!;
-
-        for (let timestamp = currentIntervalStart; timestamp <= endTime; timestamp += interval) {
-            for (let i = 0; i < data.length; i++) {
-                const log = data[i];
-                const logTimestamp = log.fightTimeMs!;
-                const totalDamage = log.damageAmount !== undefined ? log.damageAmount : 0;
-
-                if (logTimestamp >= currentIntervalStart && logTimestamp < timestamp) {
-                    currentIntervalTotalDamage += totalDamage;
-                }
-            }
-
-            const intervalDuration = timestamp - currentIntervalStart;
-            const dps = (currentIntervalTotalDamage / intervalDuration) * 1000;
-            if (!isNaN(dps) && isFinite(dps)) {
-                dpsData.push({timestamp, dps});
-            }
-
-            // Move to the start of the next interval
-            currentIntervalStart = timestamp;
-            currentIntervalTotalDamage = 0;
-        }
+    for (let i = minSlice; i <= maxSlice; ++i) {
+        damageSlices[i] = 0;
     }
-
-    return dpsData;
+    for (let i = 0; i < data.length; i++) {
+        const log = data[i];
+        const tick = log.tick!;
+        const totalDamage = log.damageAmount !== undefined ? log.damageAmount : 0;
+        const slice = tickToSlice(tick);
+        damageSlices[slice] += totalDamage;
+    }
+    return Object.entries(damageSlices).map(([slice, damage]) => ({timestamp: parseInt(slice) * intervalMs, dps: damage / intervalTicks}));
 };
 
 
@@ -72,8 +59,9 @@ const DPSChart: React.FC<DPSChartProps> = ({logLines, fightLengthMs}) => {
     const filteredLogs = filterByType(logLines, LogTypes.DAMAGE);
 
     const interval = Math.min(Math.max(fightLengthMs / 4, 600), 6000);
+    const startTick = logLines.reduce((acc, l) => Math.min(acc, l.tick ?? 0), Number.MAX_SAFE_INTEGER);
 
-    const dpsData = calculateDPSByInterval(filteredLogs, interval);
+    const dpsData = calculateDPSByInterval(filteredLogs, interval, startTick);
 
     const tickInterval = Math.ceil(dpsData.length / 5);
 
