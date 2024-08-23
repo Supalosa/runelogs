@@ -1,11 +1,10 @@
-import {Fight} from "./models/Fight";
-import {filterByType, LogTypes} from "./models/LogLine";
+import {filterByType, LogLine, LogTypes} from "./models/LogLine";
 
-export function calculateDPS(fight: Fight): number {
+export function calculateDPS(logLines: LogLine[]): number {
     // Calculate the time difference in seconds
-    const timeDiffInSeconds = (fight.lastLine.fightTimeMs! - fight.firstLine.fightTimeMs!) / 1000;
+    const timeDiffInSeconds = (logLines[logLines.length - 1].fightTimeMs! - logLines[0].fightTimeMs!) / 1000;
 
-    const filteredLogs = filterByType(fight.data, LogTypes.DAMAGE);
+    const filteredLogs = filterByType(logLines, LogTypes.DAMAGE);
     const totalDamage = filteredLogs.reduce(
         (sum, log) => sum + (log.damageAmount),
         0

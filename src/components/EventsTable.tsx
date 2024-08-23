@@ -15,7 +15,8 @@ import {BOSS_NAMES} from "../utils/constants";
 import {Actor} from "../models/Actor";
 
 interface EventsTableProps {
-    fight: Fight;
+    logLines: LogLine[];
+    loggedInPlayer: string;
     height?: string;
     showSource?: boolean;
 }
@@ -47,10 +48,8 @@ const getActorName = (log: LogLine, key: 'source' | 'target'): string => {
     return "";
 }
 
-const EventsTable: React.FC<EventsTableProps> = ({fight, height = '500px', showSource = false}) => {
-
-    const logs = fight.data;
-    const loggedInPlayer = fight.loggedInPlayer;
+const EventsTable: React.FC<EventsTableProps> = ({logLines, loggedInPlayer, height = '500px', showSource = false}) => {
+    const logs = logLines;
 
     const renderStatImages = (boostedLevels: BoostedLevels) => {
         return (

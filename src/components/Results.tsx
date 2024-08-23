@@ -6,26 +6,27 @@ import {calculateAccuracy, formatHHmmss} from "../utils/utils";
 import {LogLine, LogTypes} from "../models/LogLine";
 
 interface ResultsProps {
-    fight: Fight;
+    logLines: LogLine[];
+    fightLengthMs: number;
 }
 
-const Results: React.FC<ResultsProps> = ({fight}) => {
+const Results: React.FC<ResultsProps> = ({logLines, fightLengthMs}) => {
     const [fightDuration, setFightDuration] = useState<string>("");
     const [damage, setDamage] = useState<number>(0);
     const [dps, setDPS] = useState<number>(0);
     const [accuracy, setAccuracy] = useState<number>(0);
 
     useEffect(() => {
-        setFightDuration(formatHHmmss(fight.metaData.fightLengthMs, true));
+        setFightDuration(formatHHmmss(fightLengthMs, true));
 
-        const totalDamage = fight.data
+        const totalDamage = logLines
             .filter(log => log.type === LogTypes.DAMAGE)
             .reduce((acc, log) => acc + (log as LogLine & { type: LogTypes.DAMAGE }).damageAmount, 0);
         setDamage(totalDamage);
 
-        setDPS(calculateDPS(fight));
-        setAccuracy(calculateAccuracy(fight));
-    }, [fight]);
+        setDPS(calculateDPS(logLines));
+        setAccuracy(calculateAccuracy(logLines));
+    }, [logLines, fightLengthMs]);
 
     return (
         <div className="results-container">

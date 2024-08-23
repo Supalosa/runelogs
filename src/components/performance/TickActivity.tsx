@@ -159,7 +159,6 @@ export function getFightPerformance(encounter: Encounter, initialWeaponSpeed: nu
             console.error('NaN newWeaponHits for fight', fight);
             console.dir({durationSeconds, newWeaponHits, currentWeaponSpeed, previousWeaponSpeed, lastFight, expectedLastTimestamp});
         }
-        console.log('newWeaponHIts', newWeaponHits, durationSeconds)
         expectedWeaponHits += newWeaponHits;
     });
 

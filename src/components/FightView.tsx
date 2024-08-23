@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { BoostsTab, DamageDoneTab, DamageTakenTab, EventsTab, ReplayTab, TabsEnum } from "./Tabs";
 import { Fight, isFight } from "../models/Fight";
 import TickActivity from "./performance/TickActivity";
@@ -7,7 +7,7 @@ import { Chip, Tab, Tabs } from "@mui/material";
 import { isRaid, isRaidMetaData } from "../models/Raid";
 import DropdownFightSelector from "./sections/DropdownFightSelector";
 import { Icon } from "@iconify/react";
-import { Encounter, EncounterMetaData } from "../models/LogLine";
+import { DamageLog, Encounter, EncounterMetaData, getLogLines, LoggedInPlayerLog, LogTypes } from "../models/LogLine";
 import { isWaveMetaData, isWaves } from "../models/Waves";
 
 import * as semver from "semver";
@@ -20,8 +20,23 @@ type FightViewProps = {
     onSelectFight: (index: number) => void;
 };
 
+const getFights = (encounter: Encounter): Fight[] => {
+    return isFight(encounter) ? [encounter] : isRaid(encounter) ? encounter.fights : encounter.waves.flatMap((w) => w.fights);
+}
+
+const getPlayers = (fights: Fight[]): string[] => {
+    const res = new Set<string>();
+    fights.forEach((f) => res.add(f.loggedInPlayer));
+    return Array.from(res.values());
+};
+
 export const FightView = ({fight, encounterMetaData, selectedFightIndex, onBack, onSelectFight}: FightViewProps) => {
     const [selectedTab, setSelectedTab] = useState<TabsEnum>(TabsEnum.DAMAGE_DONE);
+    
+    const fights = useMemo(() => getFights(fight), [fight]);
+    const players = useMemo(() => getPlayers(fights), [fights]);
+    
+    const [selectedPlayer, setSelectedPlayer] = useState(players[0]);
     
     const handleTabChange = (event: React.ChangeEvent<{}>, newValue: TabsEnum) => {
         setSelectedTab(newValue);
@@ -44,7 +59,7 @@ export const FightView = ({fight, encounterMetaData, selectedFightIndex, onBack,
         return true;
     });
 
-    const fightCount = isFight(fight) ? 1 : isRaid(fight) ? fight.fights.length : fight.waves.reduce((acc, w) => acc + w.fights.length, 0);
+    const fightCount = fights.length;
     const showTickActivity = isFight(fight) ? (BOSS_NAMES.includes(fight.metaData.name) || fight.metaData.fightLengthMs >= 15000) : isWaves(fight);
 
     return <div className="App-main">
@@ -96,8 +111,8 @@ export const FightView = ({fight, encounterMetaData, selectedFightIndex, onBack,
         ))}
     </Tabs>
     {showTickActivity && <TickActivity selectedLogs={fight}/>}
+    {selectedTab === TabsEnum.DAMAGE_DONE && <DamageDoneTab selectedLogs={fight} loggedInPlayer={selectedPlayer} />}
     {/*
-    {selectedTab === TabsEnum.DAMAGE_DONE && <DamageDoneTab selectedLogs={fight}/>}
     {selectedTab === TabsEnum.DAMAGE_TAKEN && <DamageTakenTab selectedLogs={fight}/>}
     {selectedTab === TabsEnum.BOOSTS && <BoostsTab selectedLogs={fight}/>}
     {selectedTab === TabsEnum.EVENTS && <EventsTab selectedLogs={fight}/>}

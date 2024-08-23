@@ -1,10 +1,12 @@
 import {Fight} from "../../models/Fight";
 import React, {useEffect, useState} from "react";
 import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from "@mui/material";
-import {DamageLog, LogTypes} from "../../models/LogLine";
+import {DamageLog, LogLine, LogTypes} from "../../models/LogLine";
 
 interface DPSMeterBarChartProps {
-    fight: Fight;
+    logLines: LogLine[];
+    fightDurationMs: number;
+    loggedInPlayer: string;
     actor: "source" | "target";
 }
 
@@ -16,10 +18,10 @@ interface DPSData {
     dps: number;
 }
 
-const getDPSData = (fight: Fight, actor: "source" | "target"): Record<string, DPSData> => {
+const getDPSData = (logLines: LogLine[], fightDurationMs: number, actor: "source" | "target"): Record<string, DPSData> => {
     const dpsData: Record<string, DPSData> = {};
 
-    for (const logLine of fight.data) {
+    for (const logLine of logLines) {
         if (logLine.type === LogTypes.DAMAGE) {
             const damageLog = logLine as DamageLog;
             const actorName = actor === "source" ? damageLog.source.name : damageLog.target.name;
@@ -36,7 +38,7 @@ const getDPSData = (fight: Fight, actor: "source" | "target"): Record<string, DP
         }
     }
 
-    const fightDurationSeconds = (fight.lastLine.fightTimeMs! - fight.firstLine.fightTimeMs!) / 1000;
+    const fightDurationSeconds = fightDurationMs / 1000;
 
     const dpsArray = Object.entries(dpsData).map(([actor, data]: [string, DPSData]) => {
         const accuracy = (data.successfulHits / data.totalHits) * 100;
@@ -56,10 +58,8 @@ const getDPSData = (fight: Fight, actor: "source" | "target"): Record<string, DP
     return dpsData;
 }
 
-const DPSMeterTable: React.FC<DPSMeterBarChartProps> = ({fight, actor}) => {
-    const loggedInPlayer = fight.loggedInPlayer;
-
-    const dpsData = getDPSData(fight, actor);
+const DPSMeterTable: React.FC<DPSMeterBarChartProps> = ({loggedInPlayer, logLines, fightDurationMs, actor}) => {
+    const dpsData = getDPSData(logLines, fightDurationMs, actor);
     const totalDamage = Object.values(dpsData).reduce((acc, cur) => acc + cur.totalDamage, 0);
 
     const [maxWidth, setMaxWidth] = useState<number>(0);
