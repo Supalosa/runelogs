@@ -1,3 +1,4 @@
+import { Fight } from "./Fight";
 import { DamageLog, LogLine, LogTypes } from "./LogLine";
 
 export type Filter = {
@@ -20,4 +21,11 @@ export const applyNotFilter = (logLines: LogLine[], filter: Filter): LogLine[] =
         return logLines.filter((l) => !targetFilter(filter)(l));
     }
     return logLines;
+}
+
+export const applyFightFilter = (fights: Fight[], filter: Filter): Fight[] => {
+    if (filter.target !== null) {
+        return fights.filter((f) => f.mainEnemyName === filter.target);
+    }
+    return fights;
 }

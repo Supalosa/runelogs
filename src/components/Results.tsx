@@ -1,9 +1,11 @@
-import React, {useEffect, useState} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import {calculateDPS} from "../CalculateDPS";
 import {Table, TableBody, TableCell, TableContainer, TableRow} from '@mui/material';
 import {calculateAccuracy, formatHHmmss} from "../utils/utils";
 import {LogLine, LogTypes} from "../models/LogLine";
 import { Info } from './Info';
+import { FilterContext } from './context/FilterContext';
+import { applyFilter } from '../models/Filter';
 
 interface ResultsProps {
     logLines: LogLine[];
@@ -11,6 +13,7 @@ interface ResultsProps {
 }
 
 const Results: React.FC<ResultsProps> = ({logLines, fightLengthMs}) => {
+    const logFilter = useContext(FilterContext);
     const [fightDuration, setFightDuration] = useState<string>("");
     const [activeFightDuration, setActiveFightDuration] = useState<string>("");
     const [damage, setDamage] = useState<number>(0);
@@ -20,21 +23,26 @@ const Results: React.FC<ResultsProps> = ({logLines, fightLengthMs}) => {
     const [accuracy, setAccuracy] = useState<number>(0);
 
     useEffect(() => {
+        // fight duration is based on unfiltered logs
         const firstTick = logLines.reduce((acc, l) => Math.min(acc, l.tick!), Number.MAX_SAFE_INTEGER);
         const lastTick = logLines.reduce((acc, l) => Math.max(acc, l.tick!), 0);
         setFightDuration(formatHHmmss((lastTick - firstTick) * 600, true));
+
+        const filteredLogLines = applyFilter(logLines, logFilter);
+
+        
         setActiveFightDuration(formatHHmmss(fightLengthMs, true));
 
-        const totalDamage = logLines
+        const totalDamage = filteredLogLines
             .filter(log => log.type === LogTypes.DAMAGE)
             .reduce((acc, log) => acc + (log as LogLine & { type: LogTypes.DAMAGE }).damageAmount, 0);
         setDamage(totalDamage);
 
-        setOverallDps(calculateDPS(logLines));
+        setOverallDps(calculateDPS(filteredLogLines));
         setActiveDps(totalDamage / (fightLengthMs / 1000));
-        setHits(logLines.length);
-        setAccuracy(calculateAccuracy(logLines));
-    }, [logLines, fightLengthMs]);
+        setHits(filteredLogLines.length);
+        setAccuracy(calculateAccuracy(filteredLogLines));
+    }, [logLines, fightLengthMs, logFilter]);
 
     return (
         <div className="results-container">
@@ -43,7 +51,7 @@ const Results: React.FC<ResultsProps> = ({logLines, fightLengthMs}) => {
                     <TableBody>
                         <TableRow>
                             <TableCell>
-                                <strong>Duration</strong>
+                                <strong>Overall Duration</strong>
                             </TableCell>
                             <TableCell>
                                 {fightDuration}

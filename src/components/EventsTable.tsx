@@ -50,6 +50,9 @@ const getActorName = (log: LogLine, key: 'source' | 'target'): string => {
 }
 
 const EventsTable: React.FC<EventsTableProps> = ({logLines, loggedInPlayer, height = '500px', showSource = false}) => {
+    if (logLines.length === 0) {
+        return null;
+    }
     const logs = logLines;
     const firstTick = logLines[0].tick!;
 

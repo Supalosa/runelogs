@@ -65,6 +65,10 @@ const DPSChart: React.FC<DPSChartProps> = ({logLines, fightLengthMs}) => {
     const hasFilter = filteredLogs.length !== damageLogs.length;
 
     const interval = Math.min(Math.max(fightLengthMs / 4, 600), 6000);
+    
+    if (logLines.length === 0) {
+        return null;
+    }
 
     const startTick = logLines[0].tick!;
     const endTick = logLines[logLines.length - 1].tick!;

@@ -131,9 +131,6 @@ export const FightView = ({ fight, encounterMetaData, selectedFightIndex, onBack
                 {fightCount > 1 && <Chip color="secondary" size="small" label={`${fightCount} fights`} />}
             </div>
             {renderDropdownFightSelector()}
-            <div className="filter-container">
-                <TargetFilter />
-            </div>
             <Tabs
                 value={selectedTab}
                 onChange={handleTabChange}
@@ -155,10 +152,13 @@ export const FightView = ({ fight, encounterMetaData, selectedFightIndex, onBack
                     />
                 ))}
             </Tabs>
+            <div className="filter-container">
+                <TargetFilter />
+            </div>
             {showTickActivity && <TickActivity selectedLogs={fight} />}
             {selectedTab === TabsEnum.DAMAGE_DONE && <DamageDoneTab selectedLogs={fight} loggedInPlayer={selectedPlayer} />}
-            {/*
-    {selectedTab === TabsEnum.DAMAGE_TAKEN && <DamageTakenTab selectedLogs={fight}/>}
+            {selectedTab === TabsEnum.DAMAGE_TAKEN && <DamageTakenTab selectedLogs={fight} loggedInPlayer={selectedPlayer} />}
+    {/*
     {selectedTab === TabsEnum.BOOSTS && <BoostsTab selectedLogs={fight}/>}
     {selectedTab === TabsEnum.EVENTS && <EventsTab selectedLogs={fight}/>}
     {selectedTab === TabsEnum.REPLAY && <ReplayTab selectedLogs={fight}/>}*/}

@@ -16,19 +16,13 @@ export enum TabsEnum {
 }
 
 export const DamageDoneTab: React.FC<{ selectedLogs: Encounter, loggedInPlayer: string }> = ({selectedLogs, loggedInPlayer}) => {
-    const logs = getLogLines(selectedLogs);
-    const filteredLogs = filterByType(logs, LogTypes.DAMAGE);
-    return <DamageDone logLines={filteredLogs.filter((log) => log.target.index)}
-                fightLengthMs={selectedLogs.metaData.fightLengthMs}
+    return <DamageDone encounter={selectedLogs}
                 loggedInPlayer={loggedInPlayer}
                 actor={"source"} />;
 };
 
 export const DamageTakenTab: React.FC<{ selectedLogs: Encounter, loggedInPlayer: string }> = ({selectedLogs, loggedInPlayer}) => {
-    const logs = getLogLines(selectedLogs);
-    const filteredLogs = filterByType(logs, LogTypes.DAMAGE);
-    return <DamageDone logLines={filteredLogs.filter((log) => !log.target.index)}
-                fightLengthMs={selectedLogs.metaData.fightLengthMs}
+    return <DamageDone encounter={selectedLogs}
                 loggedInPlayer={loggedInPlayer}
                 actor={"target"} />;
 };

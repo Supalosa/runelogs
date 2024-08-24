@@ -125,13 +125,17 @@ export function filterByType<T extends LogLine['type']>(logs: LogLine[], type: T
 export type Encounter = Fight | Raid | Waves;
 export type EncounterMetaData = FightMetaData | RaidMetaData | WavesMetaData;
 
-export function getLogLines(encounter: Encounter): LogLine[] {
+export function getFights(encounter: Encounter): Fight[] {
     if (isFight(encounter)) {
-        return encounter.data;
+        return [encounter];
     } else if (isRaid(encounter)) {
-        return encounter.fights.flatMap((fight) => fight.data);
+        return encounter.fights;
     } else if (isWaves(encounter)) {
-        return encounter.waves.flatMap((wave) => wave.fights.flatMap((fight) => fight.data));
+        return encounter.waves.flatMap((wave) => wave.fights);
     }
     return [];
+}
+
+export function getLogLines(encounter: Encounter): LogLine[] {
+    return getFights(encounter).flatMap((f) => f.data);
 }
