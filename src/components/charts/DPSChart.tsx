@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import {Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis} from 'recharts';
 import {DamageLog, filterByType, LogLine, LogTypes} from "../../models/LogLine";
+import { FilterContext } from '../context/FilterContext';
+import { applyFilter, applyNotFilter } from '../../models/Filter';
 
 interface DPSChartProps {
     logLines: LogLine[];
@@ -33,13 +35,12 @@ const CustomTooltip: React.FC<any> = ({active, payload, label}) => {
     return null;
 };
 
-export const calculateDPSByInterval = (data: DamageLog[], intervalMs: number, startTick: number) => {
+export const calculateDPSByInterval = (data: DamageLog[], intervalMs: number, startTick: number, endTick: number) => {
     const damageSlices: {[slice: number]: number} = {};
-    const maxTick = data.reduce((acc, l) => Math.max(acc, l.tick ?? 0), 0);
     const intervalTicks = Math.floor(intervalMs / 600);
     const tickToSlice = (tick: number): number => Math.floor((tick - startTick) / intervalTicks);
     const minSlice = tickToSlice(startTick);
-    const maxSlice = tickToSlice(maxTick);
+    const maxSlice = tickToSlice(endTick);
 
     for (let i = minSlice; i <= maxSlice; ++i) {
         damageSlices[i] = 0;
@@ -56,13 +57,28 @@ export const calculateDPSByInterval = (data: DamageLog[], intervalMs: number, st
 
 
 const DPSChart: React.FC<DPSChartProps> = ({logLines, fightLengthMs}) => {
-    const filteredLogs = filterByType(logLines, LogTypes.DAMAGE);
+    const logFilter = useContext(FilterContext);
+    const damageLogs = filterByType(logLines, LogTypes.DAMAGE);
+    const filteredLogs = applyFilter(damageLogs, logFilter) as DamageLog[];
+    const unfilteredLogs = applyNotFilter(damageLogs, logFilter) as DamageLog[];
+
+    const hasFilter = filteredLogs.length !== damageLogs.length;
 
     const interval = Math.min(Math.max(fightLengthMs / 4, 600), 6000);
-    const startTick = logLines.reduce((acc, l) => Math.min(acc, l.tick ?? 0), Number.MAX_SAFE_INTEGER);
 
-    const dpsData = calculateDPSByInterval(filteredLogs, interval, startTick);
+    const startTick = logLines[0].tick!;
+    const endTick = logLines[logLines.length - 1].tick!;
 
+    let dpsData: {timestamp: number, dps: number, filteredDps?: number}[];
+    if (hasFilter) {
+        dpsData = calculateDPSByInterval(unfilteredLogs, interval, startTick, endTick);
+        const filteredDps = calculateDPSByInterval(filteredLogs, interval, startTick, endTick);
+        dpsData.forEach((value, idx) => {
+            value.filteredDps = filteredDps[idx].dps;
+        });
+    } else {
+        dpsData = calculateDPSByInterval(damageLogs, interval, startTick, endTick);
+    }
     const tickInterval = Math.ceil(dpsData.length / 5);
 
     return (
@@ -75,7 +91,7 @@ const DPSChart: React.FC<DPSChartProps> = ({logLines, fightLengthMs}) => {
                     }
                 />
                 <YAxis
-                    dataKey="dps"
+                    width={35}
                     label={{
                         value: 'DPS',
                         position: 'insideLeft',
@@ -83,12 +99,12 @@ const DPSChart: React.FC<DPSChartProps> = ({logLines, fightLengthMs}) => {
                         offset: -20,
                         style: {textAnchor: 'middle'},
                     }}
-                    width={35}
                     tickFormatter={(tick) => (tick !== 0 ? tick : '')}
                 />
+                <Area type="monotone" dataKey="dps" stroke="black" fill="tan" stackId="1" />
+                
+                {hasFilter && <Area type="monotone" dataKey="filteredDps" stroke="black" stackId="1" fill="red" />}
                 <Tooltip content={(props) => <CustomTooltip {...props} />} cursor={{fill: '#3c3226'}}/>
-
-                <Area type="monotone" dataKey="dps" stroke="black" fill="tan"/>
             </AreaChart>
         </ResponsiveContainer>
     );

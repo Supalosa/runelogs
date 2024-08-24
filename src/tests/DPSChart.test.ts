@@ -19,7 +19,7 @@ describe('calculateDPSByInterval', () => {
             generateDamageLog("02-04-2024", "01:18:20.406", 3),
         ]
 
-        const dpsData: { timestamp: number; dps: number }[] = calculateDPSByInterval(logLines, 6000, 0);
+        const dpsData: { timestamp: number; dps: number }[] = calculateDPSByInterval(logLines, 6000, 0, 10);
         console.log(dpsData);
         expect(dpsData[0].dps).toBeCloseTo(71 / 6, 6);
     });
@@ -40,7 +40,7 @@ describe('calculateDPSByInterval', () => {
             generateDamageLog("02-04-2024", "01:18:57.003", 0),
         ];
 
-        const dpsData: { timestamp: number; dps: number }[] = calculateDPSByInterval(logLines, 6000, 0);
+        const dpsData: { timestamp: number; dps: number }[] = calculateDPSByInterval(logLines, 6000, 0, 10);
         console.log(dpsData);
         expect(dpsData[0].dps).toBeCloseTo(2, 6);
         expect(dpsData[1].dps).toBeCloseTo(1.667, 3);

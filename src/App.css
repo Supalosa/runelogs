@@ -272,6 +272,22 @@
     font-family: Avenir, Arial, sans-serif !important;
 }
 
+.filter-container {
+    border: 3px solid grey;
+    color: white;
+    font-size: 14px;
+    width: 100%;
+    background: #141414;
+    margin: 14px 0;
+
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+}
+
+.filter-container button {
+    text-transform: none;
+}
 
 .MuiAppBar-root .MuiToolbar-root {
     min-height: auto !important;
