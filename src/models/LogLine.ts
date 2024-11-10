@@ -1,8 +1,8 @@
 import { Actor } from "./Actor";
 import {BoostedLevels} from "./BoostedLevels";
-import { Fight, FightMetaData } from "./Fight";
-import { Raid, RaidMetaData } from "./Raid";
-import { Waves, WavesMetaData } from "./Waves";
+import { Fight, FightMetaData, isFight } from "./Fight";
+import { isRaid, Raid, RaidMetaData } from "./Raid";
+import { isWaves, Waves, WavesMetaData } from "./Waves";
 
 export enum LogTypes {
     LOG_VERSION = 'Log Version',
@@ -121,6 +121,20 @@ export function filterByType<T extends LogLine['type']>(logs: LogLine[], type: T
     return logs.filter(log => log.type === type) as Extract<LogLine, { type: T }>[];
 }
 
-
 export type Encounter = Fight | Raid | Waves;
 export type EncounterMetaData = FightMetaData | RaidMetaData | WavesMetaData;
+
+export function getFights(encounter: Encounter): Fight[] {
+    if (isFight(encounter)) {
+        return [encounter];
+    } else if (isRaid(encounter)) {
+        return encounter.fights;
+    } else if (isWaves(encounter)) {
+        return encounter.waves.flatMap((wave) => wave.fights);
+    }
+    return [];
+}
+
+export function getLogLines(encounter: Encounter): LogLine[] {
+    return getFights(encounter).flatMap((f) => f.data);
+}

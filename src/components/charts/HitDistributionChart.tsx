@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import {Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis} from 'recharts';
-import {Fight} from "../../models/Fight";
-import {filterByType, LogTypes} from "../../models/LogLine";
+import {filterByType, LogLine, LogTypes} from "../../models/LogLine";
+import { FilterContext } from '../context/FilterContext';
+import { applyFilter } from '../../models/Filter';
 
 interface HitDistributionChartProps {
-    fight: Fight;
+    logLines: LogLine[];
 }
 
 const CustomTooltip: React.FC<any> = ({active, payload, label}) => {
@@ -26,8 +27,9 @@ const CustomTooltip: React.FC<any> = ({active, payload, label}) => {
     return null;
 };
 
-const HitDistributionChart: React.FC<HitDistributionChartProps> = ({fight}) => {
-    const filteredLogs = filterByType(fight.data, LogTypes.DAMAGE);
+const HitDistributionChart: React.FC<HitDistributionChartProps> = ({ logLines }) => {
+    const logFilter = useContext(FilterContext);
+    const filteredLogs = filterByType(applyFilter(logLines, logFilter), LogTypes.DAMAGE);
     const hitsplatAmounts = filteredLogs.map((log) => log.damageAmount);
 
     const data = hitsplatAmounts.reduce((acc, amount) => {

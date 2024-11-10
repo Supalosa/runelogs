@@ -1,6 +1,5 @@
 import React from 'react';
 import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from '@mui/material';
-import {Fight} from "../models/Fight";
 import {LogLine, LogTypes} from "../models/LogLine";
 import {BoostedLevels} from "../models/BoostedLevels";
 import attackImage from '../assets/Attack.webp';
@@ -13,9 +12,11 @@ import prayerImage from '../assets/Prayer.webp';
 import {formatHHmmss} from "../utils/utils";
 import {BOSS_NAMES} from "../utils/constants";
 import {Actor} from "../models/Actor";
+import { SECONDS_PER_TICK } from '../models/Constants';
 
 interface EventsTableProps {
-    fight: Fight;
+    logLines: LogLine[];
+    loggedInPlayer: string;
     height?: string;
     showSource?: boolean;
 }
@@ -47,10 +48,12 @@ const getActorName = (log: LogLine, key: 'source' | 'target'): string => {
     return "";
 }
 
-const EventsTable: React.FC<EventsTableProps> = ({fight, height = '500px', showSource = false}) => {
-
-    const logs = fight.data;
-    const loggedInPlayer = fight.loggedInPlayer;
+const EventsTable: React.FC<EventsTableProps> = ({logLines, loggedInPlayer, height = '500px', showSource = false}) => {
+    if (logLines.length === 0) {
+        return null;
+    }
+    const logs = logLines;
+    const firstTick = logLines[0].tick!;
 
     const renderStatImages = (boostedLevels: BoostedLevels) => {
         return (
@@ -96,7 +99,7 @@ const EventsTable: React.FC<EventsTableProps> = ({fight, height = '500px', showS
                                           style={{cursor: 'default'}}
                                           onMouseEnter={(e) => e.currentTarget.classList.add('highlighted-row')}
                                           onMouseLeave={(e) => e.currentTarget.classList.remove('highlighted-row')}>
-                                    <TableCell>{formatHHmmss(log.fightTimeMs!, true)}</TableCell>
+                                    <TableCell>{formatHHmmss((log.tick! - firstTick) * SECONDS_PER_TICK * 1000, true)}</TableCell>
                                     <TableCell style={{width: '120px', textAlign: 'right'}}>{log.type}</TableCell>
                                     <TableCell>
                                         {log.type === LogTypes.LOG_VERSION ? `Log version ${log.logVersion}` : ""}

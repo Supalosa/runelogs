@@ -1,4 +1,3 @@
-import {Fight} from "../models/Fight";
 import {LogLine, LogTypes} from "../models/LogLine";
 import moment from "moment/moment";
 import {npcIdMap} from '../lib/npcIdMap';
@@ -28,9 +27,9 @@ export function formatHHmmss(milliseconds: number, includeMs: boolean): string {
     return duration.format(formatString);
 }
 
-export function calculateAccuracy(fight: Fight) {
-    const hitsplatsCount = fight.data.filter(log => log.type === LogTypes.DAMAGE).length;
-    const successfulHitsplatsCount = fight.data.filter(log => log.type === LogTypes.DAMAGE && (log as LogLine & {
+export function calculateAccuracy(logLines: LogLine[]) {
+    const hitsplatsCount = logLines.filter(log => log.type === LogTypes.DAMAGE).length;
+    const successfulHitsplatsCount = logLines.filter(log => log.type === LogTypes.DAMAGE && (log as LogLine & {
         type: LogTypes.DAMAGE
     }).damageAmount > 0).length;
     const accuracyPercentage = hitsplatsCount > 0 ? (successfulHitsplatsCount / hitsplatsCount) * 100 : 0;

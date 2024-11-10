@@ -1,24 +1,30 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import '../App.css';
 import Dropzone from './Dropzone';
-import {Button, CircularProgress, Tab, Tabs} from '@mui/material';
+import {Button, CircularProgress} from '@mui/material';
 import Instructions from './Instructions';
-import {BoostsTab, DamageDoneTab, DamageTakenTab, EventsTab, ReplayTab, TabsEnum} from './Tabs';
-import {Fight, isFight} from '../models/Fight';
+import {isFight} from '../models/Fight';
 import localforage from 'localforage';
 import TopBar from './TopBar';
 import {closeSnackbar, SnackbarKey, useSnackbar} from 'notistack';
 import FightSelector from './sections/FightSelector';
-import {Icon} from '@iconify/react';
-import TickActivity from './performance/TickActivity';
-import {BOSS_NAMES} from '../utils/constants';
-import {getRaidMetadata, isRaidMetaData, RaidMetaData} from "../models/Raid";
+import {getRaidMetadata} from "../models/Raid";
 import { getWavesMetaData, isWaves } from '../models/Waves';
-import DropdownFightSelector from './sections/DropdownFightSelector';
 import { Encounter, EncounterMetaData } from '../models/LogLine';
+import { FightView } from './FightView';
 
 import ReactGA from 'react-ga4';
-import * as semver from "semver";
+
+const getMetaData = (fight: Encounter): EncounterMetaData => {
+    if (isFight(fight)) {
+        return fight.metaData;
+    } else if (isWaves(fight)) {
+        return getWavesMetaData(fight);
+    } else {
+        return getRaidMetadata(fight);
+    }
+}
+
 
 function App() {
     useEffect(() => {
@@ -61,6 +67,7 @@ function App() {
 
                 setParseInProgress(false);
             } else if (type === 'item') {
+                item.metaData = getMetaData(item);
                 setSelectedFight(item);
             }
         };
@@ -71,8 +78,7 @@ function App() {
     const [fightMetadata, setFightMetadata] = useState<EncounterMetaData[] | null>(null);
     const [selectedFightMetadataIndex, setSelectedFightMetadataIndex] = useState<number | null>(null);
     const [selectedRaidIndex, setSelectedRaidIndex] = useState<number | undefined>(undefined);
-    const [selectedFight, setSelectedFight] = useState<Fight | null>(null);
-    const [selectedTab, setSelectedTab] = useState<TabsEnum>(TabsEnum.DAMAGE_DONE);
+    const [selectedFight, setSelectedFight] = useState<Encounter | null>(null);
 
     const [parseInProgress, setParseInProgress] = useState<boolean>(false);
     const [parsingProgress, setParsingProgress] = useState<number>(0);
@@ -81,10 +87,6 @@ function App() {
     const handleParse = async (fileContent: string) => {
         setParseInProgress(true);
         worker.postMessage({type: 'parse', fileContent});
-    };
-
-    const handleTabChange = (event: React.ChangeEvent<{}>, newValue: TabsEnum) => {
-        setSelectedTab(newValue);
     };
 
     const handleDelete = () => {
@@ -105,7 +107,7 @@ function App() {
     const handleSelectFight = (index: number, raidIndex?: number, subIndex?: number) => {
         worker.postMessage({type: 'getItem', index, raidIndex, subIndex});
         setSelectedFightMetadataIndex(index);
-        setSelectedRaidIndex(subIndex);
+        setSelectedRaidIndex(raidIndex);
     };
 
     const handleRaidSelectFight = (raidIndex: number) => {
@@ -113,50 +115,19 @@ function App() {
         setSelectedRaidIndex(raidIndex);
     };
 
-    const renderDropdownFightSelector = () => {
-        if (
-            selectedFightMetadataIndex !== null &&
-            fightMetadata &&
-            isRaidMetaData(fightMetadata[selectedFightMetadataIndex])
-        ) {
-            const raidMetaData = fightMetadata[selectedFightMetadataIndex] as RaidMetaData;
-            return (
-                <div>
-                    <DropdownFightSelector
-                        fights={raidMetaData.fights}
-                        onSelectFight={handleRaidSelectFight}
-                        selectedFightIndex={selectedRaidIndex}
-                    />
-                </div>
-            );
-        }
-        return null;
-    };
-
-    const availableTabs = Object.values(TabsEnum).filter((tab) => {
-        if (tab === TabsEnum.REPLAY) {
-            return selectedFight?.logVersion && semver.gte(selectedFight?.logVersion, "1.2.0");
-        }
-        return true;
-    });
-
     useEffect(() => {
         // Check if fight data exists in localforage
         fightsStorage
             .getItem<Encounter[]>('fightData')
             .then((data: Encounter[] | null) => {
                 if (data) {
-                    setFightMetadata(
-                        data.map((fight) => {
-                            if (isFight(fight)) {
-                                return fight.metaData;
-                            } else if (isWaves(fight)) {
-                                return getWavesMetaData(fight);
-                            } else {
-                                return getRaidMetadata(fight);
-                            }
-                        })
-                    );
+                    // recalculate the metadata in case the metadata method has changed since last time it was stored
+                    setFightMetadata(data.map(fight =>
+                    {
+                        const metaData = getMetaData(fight);
+                        fight.metaData = metaData;
+                        return metaData;   
+                    }));
                 }
                 setLoadingStorage(false);
             })
@@ -202,58 +173,8 @@ function App() {
                     </div>
                 )}
                 {!loadingStorage && !parseInProgress && selectedFight && (
-                    <div className="App-main">
-                        <div style={{display: 'flex', alignItems: 'center'}}>
-                            <div className="back-icon-wrapper" onClick={() => setSelectedFight(null)}>
-                                <Icon icon="ic:round-arrow-back"/>
-                            </div>
-                            {selectedFightMetadataIndex !== null &&
-                            fightMetadata &&
-                            isRaidMetaData(fightMetadata[selectedFightMetadataIndex]) ? (
-                                <label>{fightMetadata[selectedFightMetadataIndex].name}</label>
-                            ) : selectedFight.isNpc ? (
-                                <a
-                                    href={`https://oldschool.runescape.wiki/w/${selectedFight.mainEnemyName}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="link"
-                                >
-                                    {selectedFight.name}
-                                </a>
-                            ) : (
-                                <label>{selectedFight.name}</label>
-                            )}
-                        </div>
-                        {renderDropdownFightSelector()}
-                        <Tabs
-                            value={selectedTab}
-                            onChange={handleTabChange}
-                            indicatorColor="primary"
-                            textColor="primary"
-                            variant="fullWidth"
-                            style={{
-                                marginBottom: '20px',
-                            }}
-                        >
-                            {availableTabs.map((tab) => (
-                                <Tab
-                                    key={tab}
-                                    label={tab}
-                                    value={tab}
-                                    style={{
-                                        color: selectedTab === tab ? 'lightblue' : 'white',
-                                    }}
-                                />
-                            ))}
-                        </Tabs>
-                        {(BOSS_NAMES.includes(selectedFight.metaData.name) ||
-                                selectedFight.metaData.fightLengthMs >= 15000) &&
-                            selectedTab !== TabsEnum.REPLAY && <TickActivity selectedLogs={selectedFight}/>}
-                        {selectedTab === TabsEnum.DAMAGE_DONE && <DamageDoneTab selectedLogs={selectedFight}/>}
-                        {selectedTab === TabsEnum.DAMAGE_TAKEN && <DamageTakenTab selectedLogs={selectedFight}/>}
-                        {selectedTab === TabsEnum.BOOSTS && <BoostsTab selectedLogs={selectedFight}/>}
-                        {selectedTab === TabsEnum.EVENTS && <EventsTab selectedLogs={selectedFight}/>}
-                        {selectedTab === TabsEnum.REPLAY && <ReplayTab selectedLogs={selectedFight}/>}
+                    <div>
+                        <FightView fight={selectedFight} encounterMetaData={selectedFightMetadataIndex ? fightMetadata?.[selectedFightMetadataIndex] : undefined} onBack={() => setSelectedFight(null)} onSelectFight={handleRaidSelectFight} selectedFightIndex={selectedRaidIndex} />
                     </div>
                 )}
             </div>

@@ -33,11 +33,11 @@ export function parseFileWithProgress(fileContent: string) {
 }
 
 // subIndex may be the wave number within a waves list
-function getSpecificItem(fightIndex: number, raidIndex?: number, subIndex?: number) {
+function getSpecificItem(fightIndex: number, raidIndex: number = -1, subIndex: number = -1) {
     fightsStorage.getItem<Fight[]>('fightData').then((parseResults: (Encounter)[] | null) => {
         if (parseResults && fightIndex >= 0 && fightIndex < parseResults.length) {
             const result = parseResults[fightIndex];
-            if(isFight(result)) {
+            if(isFight(result) || raidIndex === -1) {
                 return result;
             } else if (isRaid(result)) {
                 return result.fights[raidIndex!];

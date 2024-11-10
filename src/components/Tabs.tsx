@@ -3,8 +3,8 @@ import DamageDone from "./sections/DamageDone";
 import BoostsChart from "./charts/BoostsChart";
 import EventsTable from "./EventsTable";
 import {Fight} from "../models/Fight";
-import {filterByType, LogTypes} from "../models/LogLine";
 import MainReplayComponent from "./replay/MainReplayComponent";
+import {Encounter, getLogLines} from "../models/LogLine";
 
 export enum TabsEnum {
     DAMAGE_DONE = 'Damage Done',
@@ -14,44 +14,29 @@ export enum TabsEnum {
     REPLAY = 'Replay',
 }
 
-export const DamageDoneTab: React.FC<{ selectedLogs: Fight }> = ({selectedLogs}) => {
-    const filteredLogs = filterByType(selectedLogs.data, LogTypes.DAMAGE);
-    return <DamageDone
-        selectedLogs={{
-            ...selectedLogs!,
-            data: filteredLogs.filter(
-                (log) =>
-                    log.target.index
-            )!,
-        }}
-        actor={"source"}
-    />;
+export const DamageDoneTab: React.FC<{ selectedLogs: Encounter, loggedInPlayer: string }> = ({selectedLogs, loggedInPlayer}) => {
+    return <DamageDone encounter={selectedLogs}
+                loggedInPlayer={loggedInPlayer}
+                actor={"source"} />;
 };
 
-export const DamageTakenTab: React.FC<{ selectedLogs: Fight }> = ({selectedLogs}) => {
-    const filteredLogs = filterByType(selectedLogs.data, LogTypes.DAMAGE);
-    return <DamageDone
-        selectedLogs={{
-            ...selectedLogs!,
-            data: filteredLogs.filter(
-                (log) =>
-                    !log.target.index
-            )!,
-        }}
-        actor={"target"}
-    />;
+export const DamageTakenTab: React.FC<{ selectedLogs: Encounter, loggedInPlayer: string }> = ({selectedLogs, loggedInPlayer}) => {
+    return <DamageDone encounter={selectedLogs}
+                loggedInPlayer={loggedInPlayer}
+                actor={"target"} />;
 };
 
-export const BoostsTab: React.FC<{ selectedLogs: Fight }> = ({selectedLogs}) => {
+export const BoostsTab: React.FC<{ selectedLogs: Encounter, loggedInPlayer: string }> = ({selectedLogs, loggedInPlayer}) => {
     return (
         <div className="damage-done-container">
-            <BoostsChart fight={selectedLogs}/>
+            <BoostsChart encounter={selectedLogs} loggedInPlayer={loggedInPlayer} />
         </div>
     );
 };
 
 export const EventsTab: React.FC<{ selectedLogs: Fight }> = ({selectedLogs}) => {
-    return <EventsTable fight={selectedLogs} height={'80vh'} showSource={true}/>;
+    const logs = getLogLines(selectedLogs);
+    return <EventsTable logLines={logs} loggedInPlayer={selectedLogs.loggedInPlayer} height={'80vh'} showSource={true}/>;
 };
 
 export const ReplayTab: React.FC<{ selectedLogs: Fight }> = ({selectedLogs}) => {
