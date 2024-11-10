@@ -1,4 +1,3 @@
-import {Fight} from "../models/Fight";
 import {LogLine, LogTypes} from "../models/LogLine";
 import moment from "moment/moment";
 import {npcIdMap} from '../lib/npcIdMap';
