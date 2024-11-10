@@ -1,16 +1,17 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis} from 'recharts';
 import {pairs as d3Pairs} from 'd3-array';
 import {Fight} from "../../models/Fight";
 import {BoostedLevels} from "../../models/BoostedLevels";
-import {BoostedLevelsLog, filterByType, LogLine, LogTypes} from "../../models/LogLine";
+import {BoostedLevelsLog, Encounter, filterByType, getLogLines, LogLine, LogTypes} from "../../models/LogLine";
 import {formatHHmmss} from "../../utils/utils";
-import {MAGE_ANIMATION, MELEE_ANIMATIONS, RANGED_ANIMATIONS} from "../../models/Constants";
+import {MAGE_ANIMATION, MELEE_ANIMATIONS, RANGED_ANIMATIONS, SECONDS_PER_TICK} from "../../models/Constants";
 import {alpha, FormControlLabel, Switch} from '@mui/material';
 import {styled} from "@mui/material/styles";
 
-interface DPSChartProps {
-    fight: Fight;
+interface BoostsChartProps {
+    encounter: Encounter;
+    loggedInPlayer: string;
 }
 
 const CustomTooltip: React.FC<any> = ({active, payload, label, data}) => {
@@ -38,24 +39,26 @@ const CustomTooltip: React.FC<any> = ({active, payload, label, data}) => {
     return null;
 };
 
-export function calculateWeightedAverages(fight: Fight) {
+export function calculateWeightedAverages(logLines: BoostedLevelsLog[], startTick: number) {
     const weightedValues: Array<{ stat: keyof BoostedLevels, values: Array<{ weightedValue: number }> }> = [];
-    const startTime = fight.firstLine.fightTimeMs!;
-    const endTime = fight.lastLine.fightTimeMs!;
+    const startTime = logLines[0].tick! * SECONDS_PER_TICK;
+    const endTime = logLines[logLines.length - 1].tick! * SECONDS_PER_TICK;
+
+    const getTimestamp = (tick: number) => (tick - startTick) * SECONDS_PER_TICK * 1000;
 
     // Calculate the time difference in seconds
-    const totalTimeInSeconds = (endTime - startTime) / 1000;
+    const totalTimeInSeconds = (endTime - startTime);
 
-    const filteredLogs = filterByType(fight.data, LogTypes.BOOSTED_LEVELS);
+    const filteredLogs = filterByType(logLines, LogTypes.BOOSTED_LEVELS);
     const pairs: [LogLine, LogLine][] = d3Pairs(filteredLogs);
 
     if (pairs && pairs.length > 0) {
         // Create one more pair between the last and end of the fight
-        pairs.push([fight.data[fight.data.length - 1], fight.lastLine!])
+        // TODO pairs.push([fight.data[fight.data.length - 1], fight.lastLine!])
 
         pairs.forEach(pair => {
-            const startTime = pair[0].fightTimeMs!;
-            const endTime = pair[1].fightTimeMs!;
+            const startTime = getTimestamp(pair[0].tick!);
+            const endTime = getTimestamp(pair[1].tick!);
             const timeDiffInSeconds = (endTime - startTime) / 1000;
 
             for (const key in (pair[0] as BoostedLevelsLog).boostedLevels) {
@@ -86,10 +89,18 @@ export function calculateWeightedAverages(fight: Fight) {
     return averages as BoostedLevels;
 }
 
-const BoostsChart: React.FC<DPSChartProps> = ({fight}) => {
+const BoostsChart: React.FC<BoostsChartProps> = ({encounter, loggedInPlayer}) => {
     const [boostedLevelsData, setBoostedLevelsData] = useState<any[] | undefined>();
     const [attackAnimationData, setAttackAnimationData] = useState<any[] | undefined>();
     const [showAttackAnimations, setShowAttackAnimations] = useState<boolean>(true); // State variable to control visibility
+
+    const logLines = useMemo(() => getLogLines(encounter), [encounter]);
+    const startTick = useMemo(() => logLines.reduce((acc, l) => l.tick ? Math.min(acc, l.tick) : acc, Number.MAX_SAFE_INTEGER), [logLines]1);
+
+    const getTimestamp = (tick: number) => {
+        console.log(tick, startTick);
+        return (tick - startTick) * SECONDS_PER_TICK * 1000;
+    };
 
     useEffect(() => {
         let currentBoost: BoostedLevels;
@@ -97,11 +108,11 @@ const BoostsChart: React.FC<DPSChartProps> = ({fight}) => {
         let tempBoost: any[] = [];
         let tempAttack: any[] = [];
 
-        fight.data.forEach(log => {
+        logLines.forEach(log => {
             if (log.type === LogTypes.BOOSTED_LEVELS) {
                 tempBoost.push({
-                    timestamp: log.fightTimeMs,
-                    formattedTimestamp: formatHHmmss(log.fightTimeMs!, true),
+                    timestamp: getTimestamp(log.tick!),
+                    formattedTimestamp: formatHHmmss(getTimestamp(log.tick!), true),
                     attack: log.boostedLevels?.attack || 0,
                     strength: log.boostedLevels?.strength || 0,
                     defence: log.boostedLevels?.defence || 0,
@@ -115,18 +126,18 @@ const BoostsChart: React.FC<DPSChartProps> = ({fight}) => {
             }
 
 
-            if (log.type === LogTypes.PLAYER_ATTACK_ANIMATION && (!log.source || log.source.name === fight.loggedInPlayer)) {
+            if (log.type === LogTypes.PLAYER_ATTACK_ANIMATION && (!log.source || log.source.name === loggedInPlayer)) {
                 tempAttack.push({
-                    timestamp: log.fightTimeMs,
-                    formattedTimestamp: formatHHmmss(log.fightTimeMs!, true),
+                    timestamp: getTimestamp(log.tick!),
+                    formattedTimestamp: formatHHmmss(getTimestamp(log.tick!), true),
                     animationId: log.animationId
                 });
 
                 // Add in a fake boost datapoint, only if it doesn't already exist
                 if (!tempBoost.find(data => data.timestamp === log.fightTimeMs)) {
                     tempBoost.push({
-                        timestamp: log.fightTimeMs,
-                        formattedTimestamp: formatHHmmss(log.fightTimeMs!, true),
+                        timestamp: getTimestamp(log.tick!),
+                        formattedTimestamp: formatHHmmss(getTimestamp(log.tick!), true),
                         attack: currentBoost.attack || 0,
                         strength: currentBoost.strength || 0,
                         defence: currentBoost.defence || 0,
@@ -140,11 +151,14 @@ const BoostsChart: React.FC<DPSChartProps> = ({fight}) => {
             }
         })
 
+        const lastLine = logLines[logLines.length - 1];
+
         tempBoost.push({
             ...tempBoost[tempBoost.length - 1],
-            timestamp: fight.lastLine!.fightTimeMs,
-            formattedTimestamp: formatHHmmss(fight.lastLine!.fightTimeMs!, true),
+            timestamp: getTimestamp(lastLine.tick!),
+            formattedTimestamp: formatHHmmss(getTimestamp(lastLine.tick!), true),
         });
+        console.log(tempBoost);
 
         const verticalMelee = "rgb(153, 38, 58)";
         const verticalRanged = "rgb(72, 84, 55)";
@@ -161,14 +175,11 @@ const BoostsChart: React.FC<DPSChartProps> = ({fight}) => {
         })
         setBoostedLevelsData(tempBoost);
         setAttackAnimationData(tempAttack);
-    }, [fight]);
+    }, [encounter]);
 
 
-    const filteredLogs = filterByType(fight.data, LogTypes.BOOSTED_LEVELS);
-    const averages = calculateWeightedAverages({
-        ...fight!,
-        data: filteredLogs?.filter((log) => log.boostedLevels) as BoostedLevelsLog[],
-    });
+    const filteredLogs = filterByType(logLines, LogTypes.BOOSTED_LEVELS);
+    const averages = calculateWeightedAverages(filteredLogs?.filter((log) => log.boostedLevels) as BoostedLevelsLog[], startTick);
 
     if (!boostedLevelsData || !attackAnimationData) {
         return <div>Loading...</div>;

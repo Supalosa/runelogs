@@ -1,5 +1,5 @@
 import {calculateWeightedAverages} from "../components/charts/BoostsChart";
-import {LogLine, LogTypes} from "../models/LogLine";
+import {filterByType, LogLine, LogTypes} from "../models/LogLine";
 import {Fight} from "../models/Fight";
 import {convertTimeToMillis} from "../utils/utils";
 
@@ -11,6 +11,7 @@ describe('calculateWeightedAverages', () => {
                 date: "02-04-2024",
                 time: "01:18:00.000",
                 fightTimeMs: convertTimeToMillis("01:18:00.000"),
+                tick: 8,
                 timezone: "",
                 boostedLevels: {
                     attack: 99,
@@ -27,6 +28,7 @@ describe('calculateWeightedAverages', () => {
                 date: "02-04-2024",
                 time: "01:18:50.000",
                 fightTimeMs: convertTimeToMillis("01:18:50.000"),
+                tick: 16,
                 timezone: "",
                 boostedLevels: {
                     attack: 1,
@@ -75,7 +77,7 @@ describe('calculateWeightedAverages', () => {
             },
         }
 
-        const results = calculateWeightedAverages(fight);
+        const results = calculateWeightedAverages(filterByType(fight.data, LogTypes.BOOSTED_LEVELS), 0);
         expect(results).toEqual({
             attack: 82.66666666666667,
             strength: 82.66666666666667,

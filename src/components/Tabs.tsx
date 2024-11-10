@@ -27,10 +27,10 @@ export const DamageTakenTab: React.FC<{ selectedLogs: Encounter, loggedInPlayer:
                 actor={"target"} />;
 };
 
-export const BoostsTab: React.FC<{ selectedLogs: Fight }> = ({selectedLogs}) => {
+export const BoostsTab: React.FC<{ selectedLogs: Encounter, loggedInPlayer: string }> = ({selectedLogs, loggedInPlayer}) => {
     return (
         <div className="damage-done-container">
-            <BoostsChart fight={selectedLogs}/>
+            <BoostsChart encounter={selectedLogs} loggedInPlayer={loggedInPlayer} />
         </div>
     );
 };
