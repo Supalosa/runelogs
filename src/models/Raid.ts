@@ -3,6 +3,7 @@ import { Encounter, EncounterMetaData } from "./LogLine";
 
 export interface Raid {
     name: string;
+    logVersion: string;
     fights: Fight[];
     metaData: RaidMetaData;
 }

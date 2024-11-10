@@ -5,6 +5,7 @@ export interface Waves {
     name: string;
     waves: Wave[];
     metaData: WavesMetaData;
+    logVersion: string;
 }
 
 export interface Wave {

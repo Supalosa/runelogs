@@ -1,5 +1,5 @@
 import { Fight } from "./Fight";
-import { DamageLog, LogLine, LogTypes } from "./LogLine";
+import { LogLine, LogTypes } from "./LogLine";
 
 export type Filter = {
     target: string | number | null;

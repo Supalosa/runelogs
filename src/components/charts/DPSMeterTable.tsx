@@ -1,4 +1,3 @@
-import {Fight} from "../../models/Fight";
 import React, {useEffect, useState} from "react";
 import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from "@mui/material";
 import {DamageLog, LogLine, LogTypes} from "../../models/LogLine";

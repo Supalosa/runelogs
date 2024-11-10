@@ -1,6 +1,5 @@
 import React from 'react';
 import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from '@mui/material';
-import {Fight} from "../models/Fight";
 import {LogLine, LogTypes} from "../models/LogLine";
 import {BoostedLevels} from "../models/BoostedLevels";
 import attackImage from '../assets/Attack.webp';

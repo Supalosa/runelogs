@@ -4,7 +4,7 @@ import Results from "../Results";
 import DPSChart from "../charts/DPSChart";
 import EventsTable from "../EventsTable";
 import DPSMeterTable from "../charts/DPSMeterTable";
-import { Encounter, filterByType, getFights, getLogLines, LogLine, LogTypes } from '../../models/LogLine';
+import { Encounter, filterByType, getFights, getLogLines, LogTypes } from '../../models/LogLine';
 import { FilterContext } from '../context/FilterContext';
 import { applyFightFilter } from '../../models/Filter';
 

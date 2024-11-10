@@ -121,7 +121,6 @@ export function filterByType<T extends LogLine['type']>(logs: LogLine[], type: T
     return logs.filter(log => log.type === type) as Extract<LogLine, { type: T }>[];
 }
 
-
 export type Encounter = Fight | Raid | Waves;
 export type EncounterMetaData = FightMetaData | RaidMetaData | WavesMetaData;
 

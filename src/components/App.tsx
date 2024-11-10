@@ -1,22 +1,19 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import '../App.css';
 import Dropzone from './Dropzone';
-import {Button, CircularProgress, Tab, Tabs} from '@mui/material';
+import {Button, CircularProgress} from '@mui/material';
 import Instructions from './Instructions';
-import {BoostsTab, DamageDoneTab, DamageTakenTab, EventsTab, ReplayTab, TabsEnum} from './Tabs';
-import {Fight, isFight} from '../models/Fight';
+import {isFight} from '../models/Fight';
 import localforage from 'localforage';
 import TopBar from './TopBar';
 import {closeSnackbar, SnackbarKey, useSnackbar} from 'notistack';
 import FightSelector from './sections/FightSelector';
-import {Icon} from '@iconify/react';
-import TickActivity from './performance/TickActivity';
-import {BOSS_NAMES} from '../utils/constants';
-import {getRaidMetadata, isRaidMetaData, RaidMetaData} from "../models/Raid";
+import {getRaidMetadata} from "../models/Raid";
 import { getWavesMetaData, isWaves } from '../models/Waves';
-import DropdownFightSelector from './sections/DropdownFightSelector';
 import { Encounter, EncounterMetaData } from '../models/LogLine';
 import { FightView } from './FightView';
+
+import ReactGA from 'react-ga4';
 
 const getMetaData = (fight: Encounter): EncounterMetaData => {
     if (isFight(fight)) {
@@ -28,8 +25,6 @@ const getMetaData = (fight: Encounter): EncounterMetaData => {
     }
 }
 
-import ReactGA from 'react-ga4';
-import * as semver from "semver";
 
 function App() {
     useEffect(() => {

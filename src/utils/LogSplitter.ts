@@ -71,7 +71,7 @@ export function logSplitter(fightData: LogLine[], progressCallback?: (progress: 
     };
 
     const createWaves = (name: string, waves: Wave[]): Waves => {
-        const res: Omit<Waves, 'metaData'> = {name, waves};
+        const res: Omit<Waves, 'metaData'> = {name, waves, logVersion};
         return {...res, metaData: getWavesMetaData(res)};
     }
 
@@ -110,7 +110,7 @@ export function logSplitter(fightData: LogLine[], progressCallback?: (progress: 
         const wavesName = playerRegion ? WAVE_BASED_REGION_MAPPING[playerRegion] : null;
         if (raidName) {
             const fight: Fight = currentFight!;
-            const raid: Omit<Raid, 'metaData'> = {name: raidName, fights: []};
+            const raid: Omit<Raid, 'metaData'> = {name: raidName, fights: [], logVersion};
             currentRaid = currentRaid || {...raid, metaData: getRaidMetadata(raid)};
             currentRaid.fights.push(fight);
         } else if (wavesName) {

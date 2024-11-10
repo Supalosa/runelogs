@@ -1,7 +1,6 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis} from 'recharts';
 import {pairs as d3Pairs} from 'd3-array';
-import {Fight} from "../../models/Fight";
 import {BoostedLevels} from "../../models/BoostedLevels";
 import {BoostedLevelsLog, Encounter, filterByType, getLogLines, LogLine, LogTypes} from "../../models/LogLine";
 import {formatHHmmss} from "../../utils/utils";
@@ -95,12 +94,11 @@ const BoostsChart: React.FC<BoostsChartProps> = ({encounter, loggedInPlayer}) =>
     const [showAttackAnimations, setShowAttackAnimations] = useState<boolean>(true); // State variable to control visibility
 
     const logLines = useMemo(() => getLogLines(encounter), [encounter]);
-    const startTick = useMemo(() => logLines.reduce((acc, l) => l.tick ? Math.min(acc, l.tick) : acc, Number.MAX_SAFE_INTEGER), [logLines]1);
+    const startTick = useMemo(() => logLines.reduce((acc, l) => l.tick ? Math.min(acc, l.tick) : acc, Number.MAX_SAFE_INTEGER), [logLines]);
 
-    const getTimestamp = (tick: number) => {
-        console.log(tick, startTick);
+    const getTimestamp = useCallback((tick: number) => {
         return (tick - startTick) * SECONDS_PER_TICK * 1000;
-    };
+    }, [startTick]);
 
     useEffect(() => {
         let currentBoost: BoostedLevels;
@@ -175,7 +173,7 @@ const BoostsChart: React.FC<BoostsChartProps> = ({encounter, loggedInPlayer}) =>
         })
         setBoostedLevelsData(tempBoost);
         setAttackAnimationData(tempAttack);
-    }, [encounter]);
+    }, [encounter, getTimestamp, logLines, loggedInPlayer]);
 
 
     const filteredLogs = filterByType(logLines, LogTypes.BOOSTED_LEVELS);

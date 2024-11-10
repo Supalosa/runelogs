@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { BoostsTab, DamageDoneTab, DamageTakenTab, EventsTab, ReplayTab, TabsEnum } from "./Tabs";
+import { BoostsTab, DamageDoneTab, DamageTakenTab, TabsEnum } from "./Tabs";
 import { Fight, isFight } from "../models/Fight";
 import TickActivity from "./performance/TickActivity";
 import { BOSS_NAMES } from "../utils/constants";
@@ -7,8 +7,8 @@ import { Button, Chip, Divider, Menu, MenuItem, Tab, Tabs } from "@mui/material"
 import { isRaid, isRaidMetaData } from "../models/Raid";
 import DropdownFightSelector from "./sections/DropdownFightSelector";
 import { Icon } from "@iconify/react";
-import { DamageLog, Encounter, EncounterMetaData, getLogLines, LoggedInPlayerLog, LogTypes } from "../models/LogLine";
-import { isWaveMetaData, isWaves } from "../models/Waves";
+import { Encounter, EncounterMetaData } from "../models/LogLine";
+import { isWaves } from "../models/Waves";
 import { DEFAULT_LOG_FILTER } from "../models/Filter";
 import { FilterContext } from "./context/FilterContext";
 
@@ -48,7 +48,7 @@ export const FightView = ({ fight, encounterMetaData, selectedFightIndex, onBack
     const players = useMemo(() => getPlayers(fights), [fights]);
     const targets = useMemo(() => getTargets(fights), [fights]);
 
-    const [selectedPlayer, setSelectedPlayer] = useState(players[0]);
+    const selectedPlayer = useMemo(() => players[0], [players]);
 
     const handleTabChange = (event: React.ChangeEvent<{}>, newValue: TabsEnum) => {
         setSelectedTab(newValue);
@@ -64,6 +64,7 @@ export const FightView = ({ fight, encounterMetaData, selectedFightIndex, onBack
         }
         return null;
     };
+
     const availableTabs = Object.values(TabsEnum).filter((tab) => {
         if (tab === TabsEnum.REPLAY) {
             return fight?.logVersion && semver.gte(fight?.logVersion, "1.2.0");
@@ -162,5 +163,6 @@ export const FightView = ({ fight, encounterMetaData, selectedFightIndex, onBack
             {/*
             {selectedTab === TabsEnum.EVENTS && <EventsTab selectedLogs={fight}/>}
             {selectedTab === TabsEnum.REPLAY && <ReplayTab selectedLogs={fight}/>}*/}
+        </div>
     </FilterContext.Provider>;
 }

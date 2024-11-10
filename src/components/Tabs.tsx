@@ -4,8 +4,7 @@ import BoostsChart from "./charts/BoostsChart";
 import EventsTable from "./EventsTable";
 import {Fight} from "../models/Fight";
 import MainReplayComponent from "./replay/MainReplayComponent";
-import {Encounter, filterByType, getLogLines, LogTypes} from "../models/LogLine";
-import { applyFilter, Filter } from "../models/Filter";
+import {Encounter, getLogLines} from "../models/LogLine";
 
 export enum TabsEnum {
     DAMAGE_DONE = 'Damage Done',
